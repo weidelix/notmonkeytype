@@ -1,8 +1,9 @@
+import { BlockList } from "net";
 import { KeyboardEventHandler, useEffect, useState } from "react";
 import Letter, { LetterData, LetterState } from "./letter";
 
 export type WordData = {
-  complete: false;
+  complete: boolean;
   word: string;
   letters: LetterData[];
   activeLetterIndex: number;

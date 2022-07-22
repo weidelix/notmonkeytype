@@ -1,6 +1,8 @@
-import { KeyboardEventHandler, useEffect, useRef, useState } from "react";
-import Letter, { LetterData, LetterState } from "./letter";
-import Word, { WordData } from "./word";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { LetterData, LetterState } from "../letter";
+import useTimer from "../timer";
+import Word, { WordData } from "../word";
+import { hasError, hasInput, IsComplete } from "./word_wrapper_util";
 
 const wordsUnprocessed =
   "There once was a ship that put to sea The name of the ship was the Billy of Tea The winds blew up, her bow dipped down Oh blow, my bully boys, blow";
@@ -23,20 +25,30 @@ const words = wordsUnprocessed.split(" ").map((value): WordData => {
 
 const WordsContainer = () => {
   let activeWord = 0;
-  const ref = useRef<HTMLDivElement>(null);
   let childrenCallable: { handleKeyDown: Function }[] = [];
+  let duration = 10;
+  let startTimer = useTimer.getState().start;
+  let stopTimer = useTimer.getState().stop;
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     ref.current?.focus();
   }, []);
 
   const handleKeyDown: any = (event: KeyboardEvent) => {
+    if (!useTimer.getState().hasStarted) {
+      startTimer(duration, stopTest);
+    }
+
     // If space is entered and the current word has no input
-    // dont allow to go to next word
-    // otherwise go to next word
+    // dont allow to go to next word otherwise go to next word
     if (event.key === " ") {
-      if (hasInput(words[activeWord])) {
-        activeWord = activeWord < words.length - 1 ? activeWord + 1 : 0;
+      if (hasInput(words[activeWord]) && activeWord + 1 < words.length) {
+        IsComplete(words[activeWord]);
+        activeWord =
+          activeWord + 1 < words.length ? activeWord + 1 : activeWord;
+      } else {
+        stopTimer(stopTest);
       }
       return;
     }
@@ -61,36 +73,28 @@ const WordsContainer = () => {
     childrenCallable.push(callable);
   };
 
+  const wordList = words.map((value, i) => (
+    <Word key={i} wordData={value} setCallable={setChildrenCallable} />
+  ));
+
   return (
     <div
       ref={ref}
-      className="flex flex-wrap p-20 focus:outline-none select-none"
+      className="flex flex-wrap focus:outline-none select-none"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      {words.map((value, i) => (
-        <Word key={i} wordData={value} setCallable={setChildrenCallable} />
-      ))}
+      {wordList}
     </div>
   );
 };
 
-const hasError = (wordData: WordData) => {
-  const hasIncorrect = wordData.letters.some(
-    (value) => value.state === LetterState.Incorrect
-  );
-  const isIncomplete = wordData.letters.some(
-    (value) => value.state === LetterState.Default
-  );
-  const hasExtra = wordData.extra.length > 0;
-
-  return hasIncorrect || isIncomplete || hasExtra;
-};
-
-const hasInput = (wordData: WordData) => {
-  return wordData.letters.some(
-    (letter) => letter.state !== LetterState.Default
-  );
+const stopTest = () => {
+  const timer = useTimer.getState();
+  const secondsElapsed = timer.duration - timer.seconds;
+  const completeWords = words.filter((value) => value.complete);
+  const result =
+    (completeWords.length / (secondsElapsed / 60)).toFixed(0) + " WPM";
 };
 
 export default WordsContainer;

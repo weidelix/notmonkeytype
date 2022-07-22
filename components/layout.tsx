@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import WordsContainer from "./typingtest/words_wrapper";
+import WordsContainer from "./typingtest/word_wrapper/words_wrapper";
 
 const Layout = ({ children }: PropsWithChildren) => {
   return (
